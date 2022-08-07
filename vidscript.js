@@ -13,6 +13,9 @@ var progressBarElement = document.getElementById("progress_bar");
 var currentMode = "twotoone";
 var twotooneCount = 0;
 var alternateCount = 0;
+var stallCount = 0;
+var stallMax = 90;
+var lastTimeTic = "";
 
 //queues
 var attractQueue = [];
@@ -86,6 +89,7 @@ var getRandomAttract = function() {
 	var vidPath = attractQueue[attractIndex];
 	attractQueue.splice(attractIndex, 1);
 	if(attractQueue.length === 0) {
+		console.log("attractQueue Empty - refreshing");
 		buildAttractQueue();
 	}
 	return vidPath;
@@ -97,6 +101,7 @@ var getRandomPromo = function() {
 	var vidPath = promoQueue[promoIndex];
 	promoQueue.splice(promoIndex, 1);
 	if(promoQueue.length === 0) {
+		console.log("promoQueue Empty - refreshing");
 		buildPromoQueue();
 	}
 	return vidPath;
@@ -108,6 +113,7 @@ var getRandomVideo = function() {
 	var vidPath = allQueue[allIndex];
 	allQueue.splice(allIndex, 1);
 	if(allQueue.length === 0) {
+		console.log("allQueue Empty - refreshing");
 		buildAllQueue();
 	}
 	return vidPath;
@@ -115,6 +121,7 @@ var getRandomVideo = function() {
 
 //select and play the next video based on the mode
 var playNextVideo = function() {
+	stallCount = 0;
 	if(currentMode === "random") {
 		videoPlayerElement.setAttribute("src", getRandomVideo());
 	} else if(currentMode === "twotoone") {
@@ -143,18 +150,33 @@ var playNextVideo = function() {
 };
 
 //INIT
+console.log("building Attract Queue");
 buildAttractQueue();
+console.log("building Promo Queue");
 buildPromoQueue();
+console.log("building All Queue");
 buildAllQueue();
+console.log("playing first video");
 playNextVideo();
 
 //EVENT LISTENER SECTION
 //update the UI according to uiUpdateInterval
 var uiUpdateInterval = 1000;
 var uiUpdate = setInterval(function(){
+	if(timeLeftElement.innerHTML === lastTimeTic) {
+		stallCount++;
+		console.log("stall: " + stallCount);
+	}
+	if(stallCount >= stallMax) {
+		stallCount = 0;
+		playNextVideo();
+		return;
+	}
+	
 	var percentComplete = videoPlayerElement.currentTime / videoPlayerElement.duration * 100;
 	progressBarElement.style["width"] = percentComplete + "%";
 	
+	lastTimeTic = timeLeftElement.innerHTML;
 	var timeLeft = secondsToHMS( videoPlayerElement.duration - videoPlayerElement.currentTime );
 	timeLeftElement.innerHTML = timeLeft;
 	
