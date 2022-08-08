@@ -50,71 +50,25 @@ var getRandomInt = function(max) {
 	return Math.floor(Math.random() * max);
 };
 
-//populate array of all attract videos
-var buildAttractQueue = function() {
-	for(var i = 0; i < attractFolders.length; i++) {
-		var currentFolder = attractFolders[i];
+//Fill target array with all videos in the given folders
+var buildQueue = function(folderArray, outputArray) {
+	for(var i = 0; i < folderArray.length; i++) {
+		var currentFolder = folderArray[i];
 		var currentFolderContents = file_manifest[currentFolder];
 		for(j = 0; j < currentFolderContents.length; j++) {
-			attractQueue.push(currentFolder + "/" + currentFolderContents[j]);
+			outputArray.push(currentFolder + "/" + currentFolderContents[j]);
 		}
 	}
 };
 
-//populate array of all promo videos
-var buildPromoQueue = function() {
-	for(var i = 0; i < promoFolders.length; i++) {
-		var currentFolder = promoFolders[i];
-		var currentFolderContents = file_manifest[currentFolder];
-		for(j = 0; j < currentFolderContents.length; j++) {
-			promoQueue.push(currentFolder + "/" + currentFolderContents[j]);
-		}
-	}
-};
-
-//populate array of all videos
-var buildAllQueue = function() {
-	for(var i = 0; i < allFolders.length; i++) {
-		var currentFolder = allFolders[i];
-		var currentFolderContents = file_manifest[currentFolder];
-		for(j = 0; j < currentFolderContents.length; j++) {
-			allQueue.push(currentFolder + "/" + currentFolderContents[j]);
-		}
-	}
-};
-
-//get the path for a random attract video and remove it from the queue
-var getRandomAttract = function() {
-	var attractIndex = getRandomInt(attractQueue.length);
-	var vidPath = attractQueue[attractIndex];
-	attractQueue.splice(attractIndex, 1);
-	if(attractQueue.length === 0) {
-		console.log("attractQueue Empty - refreshing");
-		buildAttractQueue();
-	}
-	return vidPath;
-};
-
-//get the path for a random promo video and remove it from the queue
-var getRandomPromo = function() {
-	var promoIndex = getRandomInt(promoQueue.length);
-	var vidPath = promoQueue[promoIndex];
-	promoQueue.splice(promoIndex, 1);
-	if(promoQueue.length === 0) {
-		console.log("promoQueue Empty - refreshing");
-		buildPromoQueue();
-	}
-	return vidPath;
-};
-
-//get the path for a random video and remove it from the queue
-var getRandomVideo = function() {
-	var allIndex = getRandomInt(allQueue.length);
-	var vidPath = allQueue[allIndex];
-	allQueue.splice(allIndex, 1);
-	if(allQueue.length === 0) {
-		console.log("allQueue Empty - refreshing");
-		buildAllQueue();
+//Get the next random video for a queue and repopulate it if needed
+var getRandomVideo = function(sourceFolders, sourceQueue) {
+	var videoIndex = getRandomInt(sourceQueue.length);
+	var vidPath = sourceQueue[videoIndex];
+	sourceQueue.splice(videoIndex, 1);
+	if(sourceQueue.length === 0) {
+		console.log("Queue Empty - refreshing");
+		buildQueue(sourceFolders, sourceQueue);
 	}
 	return vidPath;
 };
@@ -122,40 +76,38 @@ var getRandomVideo = function() {
 //select and play the next video based on the mode
 var playNextVideo = function() {
 	stallCount = 0;
-	if(currentMode === "random") {
-		videoPlayerElement.setAttribute("src", getRandomVideo());
-	} else if(currentMode === "twotoone") {
+	if(currentMode === "twotoone") {
 		twotooneCount++;
 		if(twotooneCount > 2) {
-			videoPlayerElement.setAttribute("src", getRandomPromo());
+			videoPlayerElement.setAttribute("src", getRandomVideo(promoFolders, promoQueue));
 			twotooneCount = 0;
 		} else {
-			videoPlayerElement.setAttribute("src", getRandomAttract());
+			videoPlayerElement.setAttribute("src", getRandomVideo(attractFolders, attractQueue));
 		}
 	} else if(currentMode === "alternate") {
 		alternateCount++;
 		if(alternateCount > 1) {
-			videoPlayerElement.setAttribute("src", getRandomPromo());
+			videoPlayerElement.setAttribute("src", getRandomVideo(promoFolders, promoQueue));
 			alternateCount = 0;
 		} else {
-			videoPlayerElement.setAttribute("src", getRandomAttract());
+			videoPlayerElement.setAttribute("src", getRandomVideo(attractFolders, attractQueue));
 		}
 	} else if(currentMode === "attract") {
-		videoPlayerElement.setAttribute("src", getRandomAttract());
+		videoPlayerElement.setAttribute("src", getRandomVideo(attractFolders, attractQueue));
 	} else if(currentMode === "promotional") {
-		videoPlayerElement.setAttribute("src", getRandomPromo());
+		videoPlayerElement.setAttribute("src", getRandomVideo(promoFolders, promoQueue));
 	} else {
-		videoPlayerElement.setAttribute("src", getRandomVideo());
+		videoPlayerElement.setAttribute("src", getRandomVideo(allFolders, allQueue));
 	}
 };
 
 //INIT
 console.log("building Attract Queue");
-buildAttractQueue();
+buildQueue(attractFolders, attractQueue);
 console.log("building Promo Queue");
-buildPromoQueue();
+buildQueue(promoFolders, promoQueue);
 console.log("building All Queue");
-buildAllQueue();
+buildQueue(allFolders, allQueue);
 console.log("playing first video");
 playNextVideo();
 
